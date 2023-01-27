@@ -35,18 +35,24 @@ def prepare_images_and_depths(image1, image2, depth1, depth2):
 
 def display(img, tau, phi):
     """ display se3 fields """
-    fig, (ax1, ax2, ax3) = plt.subplots(1,3)
-    ax1.imshow(img[:, :, ::-1] / 255.0)
+    # fig, (ax1, ax2, ax3) = plt.subplots(1,3)
+    # ax1.imshow(img[:, :, ::-1] / 255.0)
+    flox_rgb = Image.fromarray(img[:, :, ::-1].astype('uint8'), 'RGB')  
+    flox_rgb.save(args.output_path + '/image.png')
 
     tau_img = np.clip(tau, -0.1, 0.1)
-    tau_img = (tau_img + 0.1) / 0.2
+    tau_img = (tau_img + 0.1) / 0.2 * 255.0
 
     phi_img = np.clip(phi, -0.1, 0.1)
-    phi_img = (phi_img + 0.1) / 0.2
+    phi_img = (phi_img + 0.1) / 0.2 * 255.0
 
-    ax2.imshow(tau_img)
-    ax3.imshow(phi_img)
-    plt.show()
+    # ax2.imshow(tau_img)
+    # ax3.imshow(phi_img)
+    # plt.show()
+    flox_rgb = Image.fromarray(tau_img.astype('uint8'), 'RGB')  
+    flox_rgb.save(args.output_path + '/tau.png')
+    flox_rgb = Image.fromarray(phi_img.astype('uint8'), 'RGB')  
+    flox_rgb.save(args.output_path + '/phi.png')
 
 
 @torch.no_grad()
@@ -92,6 +98,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', default='models/raft3d.pth', help='checkpoint to restore')
     parser.add_argument('--network', default='raft3d.raft3d', help='network architecture')
+    parser.add_argument('--output_path', help="outputs")
     args = parser.parse_args()
 
     demo(args)
