@@ -13,6 +13,7 @@ from lietorch import SE3
 import raft3d.projective_ops as pops
 from data_readers import frame_utils
 from utils import show_image, normalize_image
+from PIL import Image, ImageOps
 
 
 DEPTH_SCALE = 0.2
