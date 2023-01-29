@@ -12,7 +12,7 @@ from lietorch import SE3
 import raft3d.projective_ops as pops
 
 from utils import show_image, normalize_image
-from data_readers.kitti import KITTIEval
+from data_readers.kitti import KITTIEval, KITTI
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
