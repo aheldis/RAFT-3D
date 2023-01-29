@@ -72,7 +72,7 @@ def make_kitti_submission(model):
     DEPTH_SCALE = .1
 
     for i_batch, data_blob in enumerate(tqdm(train_loader)):
-        image1, image2, depth1, depth2, flow2d, intrinsics, index = \
+        image1, image2, depth1, depth2, flow2d, _, intrinsics = \
             [data_item.cuda() for data_item in test_data_blob]
 
 
