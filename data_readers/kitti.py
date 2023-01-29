@@ -183,8 +183,8 @@ class KITTI(data.Dataset):
         valid = valid * (disp2 > 0).float()
         flow = torch.cat([flow, dz], -1)
 
-        if self.augmentor is not None:
-            image1, image2, depth1, depth2, flow, valid, intrinsics = \
-                self.augmentor(image1, image2, depth1, depth2, flow, valid, intrinsics)
+        # if self.augmentor is not None:
+            # image1, image2, depth1, depth2, flow, valid, intrinsics = \
+                # self.augmentor(image1, image2, depth1, depth2, flow, valid, intrinsics)
 
         return image1, image2, depth1, depth2, flow, valid, intrinsics
