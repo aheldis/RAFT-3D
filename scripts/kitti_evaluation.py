@@ -73,7 +73,7 @@ def make_kitti_submission(model):
 
     for i_batch, data_blob in enumerate(tqdm(train_loader)):
         image1, image2, depth1, depth2, flow2d, _, intrinsics = \
-            [data_item.cuda() for data_item in test_data_blob]
+            [data_item.cuda() for data_item in data_blob]
 
 
         img1 = image1[0].permute(1,2,0).cpu().numpy()
