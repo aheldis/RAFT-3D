@@ -112,8 +112,8 @@ class KITTI(data.Dataset):
         self.disp1_list = sorted(glob(osp.join(root, "training", "disp_occ_0/*10.png")))
         self.disp2_list = sorted(glob(osp.join(root, "training", "disp_occ_1/*10.png")))
 
-        self.disp1_ga_list = sorted(glob(osp.join(root, "training", "disp_ganet/*10.png")))
-        self.disp2_ga_list = sorted(glob(osp.join(root, "training", "disp_ganet/*11.png")))
+        self.disp1_ga_list = sorted(glob(osp.join(root, "training", "disp_ganet_training/*10.png")))
+        self.disp2_ga_list = sorted(glob(osp.join(root, "training", "disp_ganet_training/*11.png")))
 
         self.flow_list = sorted(glob(osp.join(root, "training", "flow_occ/*10.png")))
         self.calib_list = sorted(glob(osp.join(root, "training", "calib_cam_to_cam/*.txt")))
