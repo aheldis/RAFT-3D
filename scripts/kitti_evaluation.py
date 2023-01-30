@@ -84,8 +84,7 @@ def make_kitti_submission(model):
         image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
 
-
-        img1 = image1[0].permute(1,2,0).cpu().numpy()
+        print(image1.shape)
 
         ht, wd = image1.shape[2:]
         image1, image2, depth1, depth2, padding = \
