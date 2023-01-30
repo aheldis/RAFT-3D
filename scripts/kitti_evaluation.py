@@ -124,8 +124,8 @@ def make_kitti_submission(model):
         
         epe2d = torch.sum((flow2d_est - flow[0, :, :, :2])**2, -1).sqrt()
         epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
-        epe2d_all = epe2d.reshape(-1).double().cpu().numpy()
-        epe3d_all = epe3d.reshape(-1).double().cpu().numpy()
+        epe2d_all = epe2d.reshape(-1).double().cpu().detach().numpy()
+        epe3d_all = epe3d.reshape(-1).double().cpu().detach().numpy()
         
         count_all += epe2d_all.shape[0]
         metrics_all['epe2d'] += epe2d_all.sum()
