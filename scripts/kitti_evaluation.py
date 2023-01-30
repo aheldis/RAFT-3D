@@ -84,8 +84,6 @@ def make_kitti_submission(model):
         image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
 
-        print(image1.shape)
-
         ht, wd = image1.shape[2:]
         image1, image2, depth1, depth2, padding = \
             prepare_images_and_depths(image1, image2, depth1, depth2)
@@ -113,7 +111,7 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = image1.grad.data
-        image1.data = fgsm_attack(image1, 10, data_grad)
+        image1.data[:, 0, :, :] = fgsm_attack(image1, 10, data_grad)[:, 0, :, :]
 
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
