@@ -91,6 +91,8 @@ def make_kitti_submission(model):
         image1.requires_grad = True # for attack
 
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
+        print(depth1.shape)
+        break
         
         # tau_phi = Ts.log()
 
