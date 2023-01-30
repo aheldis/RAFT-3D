@@ -91,9 +91,9 @@ def make_kitti_submission(model):
         image1.requires_grad = True # for attack
 
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
-        print(torch.min(image1), torch.max(image1))
-        print(depth1.shape, torch.max(depth1), torch.min(depth1))
-        break
+        # print(torch.min(image1), torch.max(image1))
+        # print(depth1.shape, torch.max(depth1), torch.min(depth1))
+        # break
         
         # tau_phi = Ts.log()
 
@@ -114,7 +114,7 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = image1.grad.data
-        image1.data[:, 2, :, :] = fgsm_attack(image1, 10, data_grad)[:, 2, :, :]
+        image1.data[:, 2, :, :] = fgsm_attack(image1, 10/255, data_grad)[:, 2, :, :]
 
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
