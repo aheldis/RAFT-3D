@@ -60,8 +60,16 @@ def prepare_images_and_depths(image1, image2, depth1, depth2, depth_scale=1.0):
     return image1, image2, depth1, depth2, (pad_w, pad_h)
 
 
-@torch.no_grad()
+def fgsm_attack(image, epsilon, data_grad):
+    sign_data_grad = data_grad.sign()
+    perturbed_image = image + epsilon*sign_data_grad
+    perturbed_image = torch.clamp(perturbed_image, 0, 255)
+    return perturbed_image
+
+
+# @torch.no_grad()
 def make_kitti_submission(model):
+    torch.set_grad_enabled(True) 
     loader_args = {'batch_size': 1, 'shuffle': False, 'num_workers': 1, 'drop_last': False}
     train_dataset = KITTI()
     train_loader = DataLoader(train_dataset, **loader_args)
@@ -83,7 +91,10 @@ def make_kitti_submission(model):
         image1, image2, depth1, depth2, padding = \
             prepare_images_and_depths(image1, image2, depth1, depth2)
 
+        image1.requires_grad = True # for attack
+
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
+        
         # tau_phi = Ts.log()
 
         # uncomment to diplay motion field
@@ -94,8 +105,22 @@ def make_kitti_submission(model):
 
         # compute optical flow
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
+        
         flow2d_est = flow2d_est[0, :ht, :wd, :2]
         flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
+
+        # start attack
+        epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
+        model.zero_grad()
+        epe3d.mean().backward()
+        data_grad = image1.grad.data
+        image1.data = fgsm_attack(image1, 10, data_grad)
+
+        Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
+        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
+        flow2d_est = flow2d_est[0, :ht, :wd, :2]
+        flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
+        # end attack
         
         epe2d = torch.sum((flow2d_est - flow[0, :, :, :2])**2, -1).sqrt()
         epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
