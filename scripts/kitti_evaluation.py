@@ -67,12 +67,13 @@ def make_kitti_submission(model):
     train_loader = DataLoader(train_dataset, **loader_args)
 
     count_all, count_sampled = 0, 0
-    metrics_all = {'epe2d': 0.0, '1px': 0.0, '5cm': 0.0, '10cm': 0.0}
+    metrics_all = {'epe2d': 0.0, 'epe3d': 0.0, '1px': 0.0, '5cm': 0.0, '10cm': 0.0}
+
 
     DEPTH_SCALE = .1
 
     for i_batch, data_blob in enumerate(tqdm(train_loader)):
-        image1, image2, depth1, depth2, flow2d, _, intrinsics = \
+        image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
 
 
@@ -93,13 +94,17 @@ def make_kitti_submission(model):
 
         # compute optical flow
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
-        flow = flow2d_est[0, :ht, :wd, :2]
-        print(flow.shape, flow2d.shape)
-        epe2d = torch.sum((flow - flow2d)**2, -1).sqrt()
+        flow2d_est = flow2d_est[0, :ht, :wd, :2]
+        flow3d_est = flow3d_est[:, :-4] / DEPTH_SCALE
+        
+        epe2d = torch.sum((flow2d_est - flow[0, :, :, :2])**2, -1).sqrt()
+        epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
         epe2d_all = epe2d.reshape(-1).double().cpu().numpy()
+        epe3d_all = epe3d.reshape(-1)[valid].double().cpu().numpy()
         
         count_all += epe2d_all.shape[0]
         metrics_all['epe2d'] += epe2d_all.sum()
+        metrics_all['epe3d'] += epe3d_all.sum()
         metrics_all['1px'] += np.count_nonzero(epe2d_all < 1.0)
         metrics_all['5cm'] += np.count_nonzero(epe3d_all < .05)
         metrics_all['10cm'] += np.count_nonzero(epe3d_all < .10)
