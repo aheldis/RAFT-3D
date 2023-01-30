@@ -77,8 +77,6 @@ def make_kitti_submission(model):
 
 
         img1 = image1[0].permute(1,2,0).cpu().numpy()
-        depth1 = DEPTH_SCALE * (intrinsics[0,0] / disp1)
-        depth2 = DEPTH_SCALE * (intrinsics[0,0] / disp2)
 
         ht, wd = image1.shape[2:]
         image1, image2, depth1, depth2, padding = \
