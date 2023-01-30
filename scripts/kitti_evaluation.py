@@ -111,7 +111,7 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = image1.grad.data
-        image1.data[:, 1, :, :] = fgsm_attack(image1, 10, data_grad)[:, 1, :, :]
+        image1.data[:, 2, :, :] = fgsm_attack(image1, 10, data_grad)[:, 2, :, :]
 
         Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
