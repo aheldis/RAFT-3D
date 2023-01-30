@@ -83,14 +83,15 @@ def make_kitti_submission(model):
     for i_batch, data_blob in enumerate(tqdm(train_loader)):
         image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
-
-        ht, wd = image1.shape[2:]
-        image1, image2, depth1, depth2, padding = \
-            prepare_images_and_depths(image1, image2, depth1, depth2)
-
+        
         image1.requires_grad = True # for attack
 
-        Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
+        ht, wd = image1.shape[2:]
+        image1_t, image2_t, depth1_t, depth2_t, padding = \
+            prepare_images_and_depths(image1, image2, depth1, depth2)
+
+
+        Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
         # print(torch.min(image1), torch.max(image1))
         # print(depth1.shape, torch.max(depth1), torch.min(depth1))
         # break
@@ -114,9 +115,11 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = image1.grad.data
-        image1.data[:, 0, :, :] = fgsm_attack(image1, 10/255, data_grad)[:, 0, :, :]
+        image1.data[:, 0, :, :] = fgsm_attack(image1, 10, data_grad)[:, 0, :, :]
+        image1_t, image2_t, depth1_t, depth2_t, padding = \
+            prepare_images_and_depths(image1, image2, depth1, depth2)
 
-        Ts = model(image1, image2, depth1, depth2, intrinsics, iters=16)
+        Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
         flow2d_est = flow2d_est[0, :ht, :wd, :2]
         flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
