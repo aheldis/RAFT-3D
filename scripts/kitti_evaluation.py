@@ -95,7 +95,7 @@ def make_kitti_submission(model):
         # compute optical flow
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
         flow2d_est = flow2d_est[0, :ht, :wd, :2]
-        flow3d_est = flow3d_est[:, :-4] / DEPTH_SCALE
+        flow3d_est = flow3d_est[:, :ht] / DEPTH_SCALE
         
         epe2d = torch.sum((flow2d_est - flow[0, :, :, :2])**2, -1).sqrt()
         epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
