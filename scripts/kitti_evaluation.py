@@ -117,7 +117,7 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = depth1_t.grad.data
-        depth1_t.data = fgsm_attack(image1, 2, data_grad)
+        depth1_t.data = fgsm_attack(depth1_t, 2, data_grad)
         # [:, 1, :, :]
         # image1_t, image2_t, depth1_t, depth2_t, padding = \
             # prepare_images_and_depths(image1, image2, depth1, depth2)
