@@ -105,7 +105,7 @@ def make_kitti_submission(model):
         # display(img1, tau, phi)
 
         # compute optical flow
-        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
+        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
         
         flow2d_est = flow2d_est[0, :ht, :wd, :2]
         flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
@@ -115,7 +115,8 @@ def make_kitti_submission(model):
         model.zero_grad()
         epe3d.mean().backward()
         data_grad = image1.grad.data
-        image1.data[:, 1, :, :] = fgsm_attack(image1, 10, data_grad)[:, 1, :, :]
+        image1.data = fgsm_attack(image1, 10, data_grad)
+        # [:, 1, :, :]
         image1_t, image2_t, depth1_t, depth2_t, padding = \
             prepare_images_and_depths(image1, image2, depth1, depth2)
 
