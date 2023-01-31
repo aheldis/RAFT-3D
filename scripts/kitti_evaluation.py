@@ -121,7 +121,7 @@ def make_kitti_submission(model):
             prepare_images_and_depths(image1, image2, depth1, depth2)
 
         Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
-        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1, intrinsics)
+        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
         flow2d_est = flow2d_est[0, :ht, :wd, :2]
         flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
         # end attack
