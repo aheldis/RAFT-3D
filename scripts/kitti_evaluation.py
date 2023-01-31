@@ -63,7 +63,7 @@ def prepare_images_and_depths(image1, image2, depth1, depth2, depth_scale=1.0):
 def fgsm_attack(image, epsilon, data_grad):
     sign_data_grad = data_grad.sign()
     perturbed_image = image + epsilon*sign_data_grad
-    perturbed_image = torch.clamp(perturbed_image, 0, 255)
+    # perturbed_image = torch.clamp(perturbed_image, 0, 255)
     return perturbed_image
 
 
@@ -84,11 +84,13 @@ def make_kitti_submission(model):
         image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
         
-        image1.requires_grad = True # for attack
+        # image1.requires_grad = True # for attack
 
         ht, wd = image1.shape[2:]
         image1_t, image2_t, depth1_t, depth2_t, padding = \
             prepare_images_and_depths(image1, image2, depth1, depth2)
+
+        depth1_t.requires_grad = True # for attack
 
 
         Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
@@ -114,11 +116,11 @@ def make_kitti_submission(model):
         epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
         model.zero_grad()
         epe3d.mean().backward()
-        data_grad = image1.grad.data
-        image1.data[:, 2, :, :] = fgsm_attack(image1, 10, data_grad)[:, 2, :, :]
+        data_grad = depth1_t.grad.data
+        depth1_t.data = fgsm_attack(image1, 2, data_grad)
         # [:, 1, :, :]
-        image1_t, image2_t, depth1_t, depth2_t, padding = \
-            prepare_images_and_depths(image1, image2, depth1, depth2)
+        # image1_t, image2_t, depth1_t, depth2_t, padding = \
+            # prepare_images_and_depths(image1, image2, depth1, depth2)
 
         Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
         flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
