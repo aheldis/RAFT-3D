@@ -69,7 +69,8 @@ def fgsm_attack(image, epsilon, data_grad):
 
 # @torch.no_grad()
 def make_kitti_submission(model):
-    torch.set_grad_enabled(True) 
+    if args.attack_type != 'None':
+        torch.set_grad_enabled(True) 
     loader_args = {'batch_size': 1, 'shuffle': False, 'num_workers': 1, 'drop_last': False}
     train_dataset = KITTI()
     train_loader = DataLoader(train_dataset, **loader_args)
@@ -84,13 +85,14 @@ def make_kitti_submission(model):
         image1, image2, depth1, depth2, flow, _, intrinsics = \
             [data_item.cuda() for data_item in data_blob]
         
-        # image1.requires_grad = True # for attack
+        if args.attack_type != 'None':
+            image1.requires_grad = True # for attack
 
         ht, wd = image1.shape[2:]
         image1_t, image2_t, depth1_t, depth2_t, padding = \
             prepare_images_and_depths(image1, image2, depth1, depth2)
 
-        depth1_t.requires_grad = True # for attack
+        # depth1_t.requires_grad = True # for attack
 
 
         Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
@@ -113,19 +115,31 @@ def make_kitti_submission(model):
         flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
 
         # start attack
-        epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
-        model.zero_grad()
-        epe3d.mean().backward()
-        data_grad = depth1_t.grad.data
-        depth1_t.data = fgsm_attack(depth1_t, 2, data_grad)
-        # [:, 1, :, :]
-        # image1_t, image2_t, depth1_t, depth2_t, padding = \
-            # prepare_images_and_depths(image1, image2, depth1, depth2)
+        if args.attack_type != 'None':
+            if args.attack_type == 'FGSM':
+                epsilon = args.epsilon
+                pgd_iters = 1
+            else:
+                epsilon = args.epsilon / args.iters
+                pgd_iters = args.iters
+        
+            for iter in range(pgd_iters):
+                epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
+                model.zero_grad()
+                epe3d.mean().backward()
+                # data_grad = depth1_t.grad.data
+                # depth1_t.data = fgsm_attack(depth1_t, 2, data_grad)
+                data_grad = image1.grad.data
+                if args.channel == -1:
+                    image1.data = fgsm_attack(image1, epsilon, data_grad)
+                else:
+                    image1.data[:, args.channel, :, :] = fgsm_attack(image1, epsilon, data_grad)[:, args.channel, :, :]
+                image1_t, image2_t, depth1_t, depth2_t, padding = prepare_images_and_depths(image1, image2, depth1, depth2)
 
-        Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
-        flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
-        flow2d_est = flow2d_est[0, :ht, :wd, :2]
-        flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
+                Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
+                flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
+                flow2d_est = flow2d_est[0, :ht, :wd, :2]
+                flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE
         # end attack
         
         epe2d = torch.sum((flow2d_est - flow[0, :, :, :2])**2, -1).sqrt()
@@ -151,6 +165,10 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='path the model weights')
     parser.add_argument('--network', default='raft3d.raft3d', help='network architecture')
     parser.add_argument('--radius', type=int, default=32)
+    parser.add_argument('--attack_type', help='Attack type options: None, FGSM, PGD', type=str, default='PGD')
+    parser.add_argument('--iters', help='Number of iters for PGD?', type=int, default=10)
+    parser.add_argument('--epsilon', help='epsilon?', type=int, default=10)
+    parser.add_argument('--channel', help='Color channel options: 0, 1, 2, -1 (all)', type=int, default=-1) 
     args = parser.parse_args()
 
     import importlib
