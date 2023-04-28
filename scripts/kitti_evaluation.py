@@ -63,7 +63,7 @@ def prepare_images_and_depths(image1, image2, depth1, depth2, depth_scale=1.0):
 def fgsm_attack(image, epsilon, data_grad):
     sign_data_grad = data_grad.sign()
     perturbed_image = image + epsilon*sign_data_grad
-    # perturbed_image = torch.clamp(perturbed_image, 0, 255)
+    perturbed_image = torch.clamp(perturbed_image, 0, 255)
     return perturbed_image
 
 
