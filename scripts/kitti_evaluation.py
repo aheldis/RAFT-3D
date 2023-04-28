@@ -135,7 +135,8 @@ def make_kitti_submission(model):
                     image1.data = fgsm_attack(image1, epsilon, data_grad)
                 else:
                     image1.data[:, args.channel, :, :] = fgsm_attack(image1, epsilon, data_grad)[:, args.channel, :, :]
-                image1.data = ori + torch.clamp(image1.data - ori, -args.epsilon, args.epsilon)
+                if args.attack_type == 'PGD':
+                    image1.data = ori + torch.clamp(image1.data - ori, -args.epsilon, args.epsilon)
                 image1_t, image2_t, depth1_t, depth2_t, padding = prepare_images_and_depths(image1, image2, depth1, depth2)
 
                 Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
