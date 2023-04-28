@@ -122,7 +122,8 @@ def make_kitti_submission(model):
             else:
                 epsilon = args.epsilon / args.iters
                 pgd_iters = args.iters
-        
+
+            ori = image1.data
             for iter in range(pgd_iters):
                 epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
                 model.zero_grad()
@@ -134,6 +135,7 @@ def make_kitti_submission(model):
                     image1.data = fgsm_attack(image1, epsilon, data_grad)
                 else:
                     image1.data[:, args.channel, :, :] = fgsm_attack(image1, epsilon, data_grad)[:, args.channel, :, :]
+                image1.data = ori + torch.clamp(ori - image1.data, -args.epsilon, args.epsilon)
                 image1_t, image2_t, depth1_t, depth2_t, padding = prepare_images_and_depths(image1, image2, depth1, depth2)
 
                 Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
