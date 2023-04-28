@@ -124,7 +124,7 @@ def make_kitti_submission(model):
                 pgd_iters = args.iters
 
             ori = image1.data
-            for iter in range(pgd_iters):
+            for itr in range(pgd_iters):
                 epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
                 model.zero_grad()
                 epe3d.mean().backward()
