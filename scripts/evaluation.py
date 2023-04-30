@@ -51,8 +51,10 @@ def prepare_images_and_depths(image1, image2, depth1, depth2, depth_scale=0.2):
     return image1, image2, depth1, depth2, (pad_w, pad_h)
 
 
-@torch.no_grad()
+# @torch.no_grad()
 def test_sceneflow(model):
+    if args.attack_type != 'None':
+        torch.set_grad_enabled(True) 
     loader_args = {'batch_size': 1, 'shuffle': False, 'num_workers': 4, 'drop_last': False}
     train_dataset = FlyingThingsTest()
     train_loader = DataLoader(train_dataset, **loader_args)
@@ -64,6 +66,9 @@ def test_sceneflow(model):
     for i_batch, test_data_blob in enumerate(tqdm(train_loader)):
         image1, image2, depth1, depth2, flow2d, flow3d, intrinsics, index = \
             [data_item.cuda() for data_item in test_data_blob]
+
+         if args.attack_type != 'None':
+            image1.requires_grad = True # for attack
 
         mag = torch.sum(flow2d**2, dim=-1).sqrt()
         valid = (mag.reshape(-1) < MAX_FLOW) & (depth1.reshape(-1) < MAX_DEPTH)
@@ -81,6 +86,39 @@ def test_sceneflow(model):
         # unpad the flow fields / undo depth scaling
         flow2d_est = flow2d_est[:, :-4, :, :2]
         flow3d_est = flow3d_est[:, :-4] / DEPTH_SCALE
+
+
+        # start attack
+        if args.attack_type != 'None':
+            if args.attack_type == 'FGSM':
+                epsilon = args.epsilon
+                pgd_iters = 1
+            else:
+                epsilon = 2.5 * args.epsilon / args.iters
+                pgd_iters = args.iters
+
+            ori = image1.data
+            for itr in range(pgd_iters):
+                epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
+                model.zero_grad()
+                epe3d.mean().backward()
+                # data_grad = depth1_t.grad.data
+                # depth1_t.data = fgsm_attack(depth1_t, 2, data_grad)
+                data_grad = image1.grad.data
+                if args.channel == -1:
+                    image1.data = fgsm_attack(image1, epsilon, data_grad)
+                else:
+                    image1.data[:, args.channel, :, :] = fgsm_attack(image1, epsilon, data_grad)[:, args.channel, :, :]
+                if args.attack_type == 'PGD':
+                    image1.data = ori + torch.clamp(image1.data - ori, -args.epsilon, args.epsilon)
+                image1_t, image2_t, depth1_t, depth2_t, padding = prepare_images_and_depths(image1, image2, depth1, depth2, DEPTH_SCALE)
+
+                Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
+                flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
+                flow2d_est = flow2d_est[:, :-4, :, :2]
+                flow3d_est = flow3d_est[:, :-4] / DEPTH_SCALE
+        # end attack
+       
 
         epe2d = torch.sum((flow2d_est - flow2d)**2, -1).sqrt()
         epe3d = torch.sum((flow3d_est - flow3d)**2, -1).sqrt()
@@ -125,6 +163,10 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='path the model weights')
     parser.add_argument('--network', default='raft3d.raft3d', help='network architecture')
     parser.add_argument('--radius', type=int, default=32)
+     parser.add_argument('--attack_type', help='Attack type options: None, FGSM, PGD', type=str, default='PGD')
+    parser.add_argument('--iters', help='Number of iters for PGD?', type=int, default=10)
+    parser.add_argument('--epsilon', help='epsilon?', type=int, default=10)
+    parser.add_argument('--channel', help='Color channel options: 0, 1, 2, -1 (all)', type=int, default=-1) 
     args = parser.parse_args()
 
     import importlib
