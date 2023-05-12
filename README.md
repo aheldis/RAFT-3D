@@ -48,19 +48,18 @@ python scripts/demo.py --network=raft3d.raft3d_bilaplacian --model=raft3d_laplac
 
 ### FlyingThings3D Evaluation:
 
-Evaluation requires the [FlyingThings3D](https://lmb.informatik.uni-freiburg.de/resources/datasets/SceneFlowDatasets.en.html) dataset to be downloaded.  You also need to download the preprocessed FlowNet3D testing data from [things_test_data.pickle](https://drive.google.com/file/d/1zzPAJ-hYlA0eKgzwwuuh3zfS47OXD7su/view?usp=sharing).
+Evaluation requires the [FlyingThings3D_subset](https://lmb.informatik.uni-freiburg.de/resources/datasets/SceneFlowDatasets.en.html) dataset to be downloaded.  You also need to download the preprocessed FlowNet3D testing data from [things_test_data.pickle](https://drive.google.com/file/d/1zzPAJ-hYlA0eKgzwwuuh3zfS47OXD7su/view?usp=sharing).
 
 Our code expects the following directory structure:
 ```Shell
 ├── datasets
-    ├── things_test_data.pickle
     ├── FlyingThings3D
-        ├── frames_cleanpass
-        ├── frames_finalpass
-        ├── disparity
-        ├── disparity_change
-        ├── optical_flow
-        ├── camera_data
+        ├── FlyingThings3D_subset
+            ├── val
+                ├── image_clean
+                ├── disparity
+                ├── disparity_change
+                ├── flow
 ```
 
 You can then evaluate one of the pretrained models
@@ -92,6 +91,12 @@ You can then run the KITTI submission script
 python scripts/kitti_submission.py --network=raft3d.raft3d_bilaplacian --model=raft3d_kitti.pth
 ```
 
+Afterwards, you can evaluate one of the pretrained models
+
+
+```
+python scripts/kitti_evaluation.py --network=raft3d.raft3d_bilaplacian --model=raft3d_kitti.pth
+```
 
 ## Training
 

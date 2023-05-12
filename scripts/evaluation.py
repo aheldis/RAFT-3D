@@ -67,7 +67,7 @@ def test_sceneflow(model):
         image1, image2, depth1, depth2, flow2d, flow3d, intrinsics, index = \
             [data_item.cuda() for data_item in test_data_blob]
 
-         if args.attack_type != 'None':
+        if args.attack_type != 'None':
             image1.requires_grad = True # for attack
 
         mag = torch.sum(flow2d**2, dim=-1).sqrt()
@@ -135,8 +135,10 @@ def test_sceneflow(model):
         metrics_all['10cm'] += np.count_nonzero(epe3d_all < .10)
 
         # FlowNet3D evaluation (only use sampled non-occ pixels)
-        epe3d = epe3d[0,index[0,0],index[0,1]]
-        epe2d = epe2d[0,index[0,0],index[0,1]]
+        # epe3d = epe3d[0,index[0,0],index[0,1]]
+        # epe2d = epe2d[0,index[0,0],index[0,1]]
+        epe3d = epe3d[0]
+        epe2d = epe2d[0]
 
         epe2d_sampled = epe2d.reshape(-1).double().cpu().numpy()
         epe3d_sampled = epe3d.reshape(-1).double().cpu().numpy()
@@ -163,7 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', help='path the model weights')
     parser.add_argument('--network', default='raft3d.raft3d', help='network architecture')
     parser.add_argument('--radius', type=int, default=32)
-     parser.add_argument('--attack_type', help='Attack type options: None, FGSM, PGD', type=str, default='PGD')
+    parser.add_argument('--attack_type', help='Attack type options: None, FGSM, PGD', type=str, default='PGD')
     parser.add_argument('--iters', help='Number of iters for PGD?', type=int, default=10)
     parser.add_argument('--epsilon', help='epsilon?', type=int, default=10)
     parser.add_argument('--channel', help='Color channel options: 0, 1, 2, -1 (all)', type=int, default=-1) 
