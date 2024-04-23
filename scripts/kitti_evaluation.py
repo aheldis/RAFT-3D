@@ -116,6 +116,8 @@ def make_kitti_submission(model):
 
         # start attack
         if args.attack_type != 'None':
+            ori = image1.data
+            
             if args.attack_type == "RAND":
                 epsilon = args.epsilon
                 shape = image1.shape
@@ -135,7 +137,6 @@ def make_kitti_submission(model):
                 epsilon = 2.5 * args.epsilon / args.iters
                 pgd_iters = args.iters
 
-            ori = image1.data
             for itr in range(pgd_iters):
                 epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
                 model.zero_grad()
