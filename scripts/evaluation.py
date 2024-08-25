@@ -90,14 +90,27 @@ def test_sceneflow(model):
 
         # start attack
         if args.attack_type != 'None':
-            if args.attack_type == 'FGSM':
+            ori = image1.data
+
+            if args.attack_type == "RAND":
+                epsilon = args.epsilon
+                shape = image1.shape
+                delta = (np.random.rand(np.product(shape)).reshape(shape) - 0.5) * 2 * epsilon
+                image1.data = ori + torch.from_numpy(delta).type(torch.float).cuda()
+                image1.data = torch.clamp(image1.data, 0.0, 255.0)
+                image1_t, image2_t, depth1_t, depth2_t, padding = prepare_images_and_depths(image1, image2, depth1, depth2)
+                Ts = model(image1_t, image2_t, depth1_t, depth2_t, intrinsics, iters=16)
+                flow2d_est, flow3d_est, _ = pops.induced_flow(Ts, depth1_t, intrinsics)
+                flow2d_est = flow2d_est[0, :ht, :wd, :2]
+                flow3d_est = flow3d_est[:, :ht, :wd] / DEPTH_SCALE                
+                pgd_iters = 0
+            elif args.attack_type == 'FGSM':
                 epsilon = args.epsilon
                 pgd_iters = 1
             else:
                 epsilon = 2.5 * args.epsilon / args.iters
                 pgd_iters = args.iters
 
-            ori = image1.data
             for itr in range(pgd_iters):
                 epe3d = torch.sum((flow3d_est - flow)**2, -1).sqrt()
                 model.zero_grad()
